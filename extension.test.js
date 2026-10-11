@@ -48,11 +48,11 @@ test('isolated bridge ignores other windows/nonces and hands off only to the rea
   await listeners.get('message')(ready);assert.equal(claims,1);assert.equal(sent[0].target,origin);assert.equal(sent[0].data.login.password,login.password);assert.equal(listeners.has('message'),false);
 });
 test('real extension worker stores only app settings and rejects page-origin save requests',async()=>{
-  let listener,registered,settings={},nextTab=20;
+  let listener,registered,settings={},nextTab=20,permissionAdded,granted=true;
   const previousChrome=globalThis.chrome,previousInterval=globalThis.setInterval;
   globalThis.setInterval=()=>0;
   const popup='chrome-extension://fixture/popup.html';
-  globalThis.chrome={runtime:{id:'fixture',getURL:path=>'chrome-extension://fixture/'+path,onMessage:{addListener:fn=>listener=fn}},permissions:{contains:async()=>true,remove:async()=>true,onRemoved:{addListener(){}}},storage:{local:{get:async()=>settings,set:async value=>{settings={...settings,...value};}}},scripting:{unregisterContentScripts:async()=>{},registerContentScripts:async scripts=>registered=scripts},tabs:{get:async()=>({url:login.website+'/login'}),create:async({url})=>({id:nextTab,url}),onRemoved:{addListener(){}}}};
+  globalThis.chrome={runtime:{id:'fixture',getURL:path=>'chrome-extension://fixture/'+path,onMessage:{addListener:fn=>listener=fn}},permissions:{contains:async()=>granted,remove:async()=>true,onRemoved:{addListener(){}},onAdded:{addListener:fn=>permissionAdded=fn}},storage:{local:{get:async()=>settings,set:async value=>{settings={...settings,...value};},remove:async key=>{delete settings[key];}}},scripting:{unregisterContentScripts:async()=>{},registerContentScripts:async scripts=>registered=scripts},tabs:{get:async()=>({url:login.website+'/login'}),create:async({url})=>({id:nextTab,url}),onRemoved:{addListener(){}}}};
   const send=(message,sender)=>new Promise(resolve=>listener(message,sender,resolve));
   const popupSender={id:'fixture',url:popup};
   try{
@@ -68,5 +68,12 @@ test('real extension worker stores only app settings and rejects page-origin sav
     const reply=await send({type:'claim-login',nonce},{id:'fixture',frameId:0,tab:{id:20},url:settings.app});assert.equal(reply.login.password,login.password);
     assert.equal((await send({type:'claim-login',nonce},{id:'fixture',frameId:0,tab:{id:20},url:settings.app})).login,null);
     assert.match((await send({type:'save-login',sourceTab:1,login:{...login,website:'https://evil.example.com'}},popupSender)).error,/website changed/);
+    // The popup disappears during Chrome's permission prompt: the worker finishes setup.
+    granted=false;
+    assert.deepEqual(await send({type:'prepare-configure',app:'https://new-vault.example.com/app'},popupSender),{ok:false});
+    assert.equal(settings.pendingApp,'https://new-vault.example.com/app');
+    granted=true;permissionAdded();await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(settings.app,'https://new-vault.example.com/app');assert.equal(settings.pendingApp,undefined);
+    assert.deepEqual(registered[0].matches,['https://new-vault.example.com/*']);
   }finally{globalThis.chrome=previousChrome;globalThis.setInterval=previousInterval;}
 });

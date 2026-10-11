@@ -33,9 +33,11 @@ $('connect').onsubmit=async event=>{
   event.preventDefault();
   try{
     const app=appAddress($('app').value);
+    // Start both while the click has user activation; the worker survives the dialog.
+    const setup=send({type:'prepare-configure',app});
     const granted=await chrome.permissions.request({origins:[new URL(app).origin+'/*']});
     if(!granted)throw new Error('Permission was not granted. Keykeep needs access to its own host to receive the login.');
-    await send({type:'configure',app});$('app').value=app;$('open').href=app;$('open').hidden=false;status('Connected. Sign in to Keykeep, then return to your login website.');
+    await setup;await send({type:'configure',app});$('app').value=app;$('open').href=app;$('open').hidden=false;status('Connected. Sign in to Keykeep, then return to your login website.');
   }catch(error){status(error.message);}
 };
 window.addEventListener('pagehide',clear);

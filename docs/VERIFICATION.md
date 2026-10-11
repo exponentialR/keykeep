@@ -1,6 +1,6 @@
 # Verification record
 
-Release candidate: 0.3.0-beta.1. Recorded 11 October 2026.
+Release candidate: 0.3.0-beta.2. Recorded 11 October 2026.
 
 ## Automated checks
 
@@ -40,3 +40,5 @@ The release is experimental. Version 1.0 is not claimed.
 ## Browser login capture
 
 The extension uses a user-click capture and one-use app handoff; the app saves only after confirmation. Automated checks include wrong-tab, frame, origin, token replay and expiry rejection, worker behaviour using mocked Chrome APIs, masked review, duplicate update choice and encrypted revision history. Local browser UI checks use fictional data. Installing the actual extension and checking Chrome/Edge permission prompts is a separate remaining browser validation step; these tests are not marketplace approval or an independent security audit.
+
+Installed Chrome trial confirmed version 0.3.0 is enabled and the optional host permission prompt works. That trial found the popup is closed during permission granting; setup now stages the non-secret app address in the worker and completes on the permission-added event or worker restart. A regression test covers completion without a surviving popup. The patched extension needs a manual reload before capture/handoff validation; final save still needs the owner to unlock the live vault.
