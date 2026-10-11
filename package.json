@@ -1,0 +1,24 @@
+{
+  "name": "keykeep",
+  "version": "0.2.0-beta.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test",
+    "build:cloud": "node scripts/build-cloud.js && wrangler deploy --dry-run --config wrangler.worker.jsonc --outdir .build && node scripts/finish-cloud.js",
+    "build:demo": "node scripts/build-demo.js",
+    "demo": "node scripts/build-demo.js && node server.js",
+    "deploy:personal": "node scripts/deploy-personal.js",
+    "deploy:demo": "node scripts/deploy-demo.js"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "jose": "^6.2.12"
+  },
+  "devDependencies": {
+    "wrangler": "^4.149.0"
+  }
+}

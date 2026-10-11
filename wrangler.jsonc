@@ -1,0 +1,20 @@
+{
+  "name": "keykeep",
+  "pages_build_output_dir": "dist",
+  "compatibility_date": "2026-10-11",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "keykeep-vault",
+      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+    }
+  ],
+  "vars": {
+    "ORIGIN": "https://vault.example.com",
+    "EMAIL_FROM": "Keykeep <access@notify.example.com>",
+    "VAULT_OWNER": "owner@example.com",
+    "ALLOWED_EMAILS": "owner@example.com",
+    "OIDC_CLIENT_ID": "REPLACE_WITH_YOUR_OIDC_CLIENT_ID",
+    "OIDC_ISSUER": "https://YOUR_TEAM.cloudflareaccess.com/cdn-cgi/access/sso/oidc/YOUR_CLIENT_ID"
+  }
+}
