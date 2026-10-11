@@ -15,4 +15,9 @@ test('only owner accounts migrate legacy vaults, and migration never overwrites 
  const guest=await accountContext();assert.equal(guest.storage.getItem('keykeep.v1'),null);
  identity={vaultId:'b'.repeat(64),legacyOwner:true};const owner=await accountContext();assert.equal(owner.storage.getItem('keykeep.v1'),'legacy ciphertext');
  owner.storage.setItem('keykeep.v1','newer ciphertext');assert.equal((await accountContext()).storage.getItem('keykeep.v1'),'newer ciphertext');assert.equal(data.get('keykeep.v1'),'legacy ciphertext');
+ // A deliberate owner reset must not import any old browser or recovery copy.
+ owner.storage.setItem('keykeep.recoveries.v1','old recovery');
+ identity={vaultId:'c'.repeat(64),admin:true,legacyOwner:false};const fresh=await accountContext();
+ assert.equal(fresh.storage.getItem('keykeep.v1'),null);assert.equal(fresh.storage.getItem('keykeep.recoveries.v1'),null);
+ assert.equal(owner.storage.getItem('keykeep.v1'),'newer ciphertext');assert.equal(owner.storage.getItem('keykeep.recoveries.v1'),'old recovery');
 });

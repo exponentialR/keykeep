@@ -95,7 +95,7 @@ async function handle(request,env){
   const user=await sessionFor(request,env);
   if(!user)return path.startsWith('/api/')?json({error:'Sign in to access your vault.'},401):redirect('/');
   if(request.method!=='GET' && (request.headers.get('Origin')!==env.ORIGIN||request.headers.get('X-Keykeep-Request')!=='1'))return json({error:'Request origin rejected.'},403);
-  if(path==='/api/session'&&request.method==='GET')return json({email:user.email,vaultId:await vaultIdentity(user.email,env),admin:allowedEmail(user.email,env),legacyOwner:allowedEmail(user.email,env)});
+  if(path==='/api/session'&&request.method==='GET')return json({email:user.email,vaultId:await vaultIdentity(user.email,env),admin:allowedEmail(user.email,env),legacyOwner:allowedEmail(user.email,env)&&env.MIGRATE_LEGACY_OWNER!=='0'});
   if(path==='/api/logout'&&request.method==='POST'){
     await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(await hash(cookies(request)['__Host-keykeep-session'])).run();
     return new Response(null,{status:204,headers:{'Set-Cookie':cookie('__Host-keykeep-session','',0)}});

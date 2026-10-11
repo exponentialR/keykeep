@@ -46,6 +46,28 @@ test('explicit email aliases share a fixed vault owner and reject other addresse
 });
 
 const digestText=async value=>Buffer.from(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))).toString('hex');
+test('owner reset isolates a fresh vault, rejects old-device writes and preserves member vaults',async()=>{
+ const DB=database(),origin='https://vault.example.test',email='owner@example.test';
+ const env={DB,ORIGIN:origin,OIDC_ISSUER:'https://example.cloudflareaccess.com/oidc/client',OIDC_CLIENT_ID:'client',OIDC_CLIENT_SECRET:'synthetic',ALLOWED_EMAILS:email+',alias@example.test',VAULT_OWNER:email};
+ const token='reset-synthetic-session';
+ await DB.prepare('INSERT INTO sessions VALUES(?,?,?,?)').bind(await digestText(token),'subject',email,Math.floor(Date.now()/1000)+600).run();
+ const request=(path,options={})=>worker.fetch(new Request(origin+path,{...options,headers:{Cookie:'__Host-keykeep-session='+token,Origin:origin,'X-Keykeep-Request':'1','Content-Type':'application/json',...options.headers}}),env);
+ const oldIdentity=await (await request('/api/session')).json();assert.equal(oldIdentity.legacyOwner,true);
+ const put=(vaultId)=>request('/api/vault',{method:'PUT',headers:{'X-Keykeep-Vault':vaultId},body:JSON.stringify({baseVersion:0,writeId:crypto.randomUUID(),envelope:wire})});
+ try{
+  assert.equal((await put(oldIdentity.vaultId)).status,200);
+  await DB.prepare('INSERT INTO vaults VALUES(?,?,?,?,?)').bind('member:guest@example.test',1,JSON.stringify(wire),'guest-write','now').run();
+  const memberBefore=DB.raw.prepare('SELECT * FROM vaults WHERE owner=?').get('member:guest@example.test');
+  env.VAULT_OWNER='reset:'+crypto.randomUUID();env.MIGRATE_LEGACY_OWNER='0';
+  const fresh=await (await request('/api/session')).json();assert.notEqual(fresh.vaultId,oldIdentity.vaultId);assert.equal(fresh.legacyOwner,false);assert.equal(fresh.admin,true);
+  assert.equal((await put(oldIdentity.vaultId)).status,403);
+  assert.deepEqual(await (await request('/api/vault',{headers:{'X-Keykeep-Vault':fresh.vaultId}})).json(),{version:0,envelope:null});
+  await DB.prepare('UPDATE sessions SET email=? WHERE token_hash=?').bind('alias@example.test',await digestText(token)).run();
+  assert.equal((await (await request('/api/session')).json()).vaultId,fresh.vaultId);
+  assert.equal((await put(fresh.vaultId)).status,200);
+  assert.deepEqual(DB.raw.prepare('SELECT * FROM vaults WHERE owner=?').get('member:guest@example.test'),memberBefore);
+ }finally{DB.raw.close();}
+});
 test('two isolated clients preserve offline edits, reconcile through the real Worker and follow key rotation',async()=>{
  const DB=database(),origin='https://vault.example.test',email='owner@example.test';
  const env={DB,ORIGIN:origin,OIDC_ISSUER:'https://example.cloudflareaccess.com/oidc/client',OIDC_CLIENT_ID:'client',OIDC_CLIENT_SECRET:'synthetic',ALLOWED_EMAILS:email,VAULT_OWNER:email};

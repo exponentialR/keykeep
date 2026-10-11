@@ -46,6 +46,12 @@ D1 retains previous encrypted versions through a trigger. There is currently no 
 
 The hosted app requires online admission when opened. Private files are not cached for offline reopening. An already-open session can continue local saves offline. Reload old app tabs after deployment; confirm pending local changes are safely backed up first.
 
+### Deliberate owner vault reset
+
+For an authorised fresh start, first export the owner's encrypted `vaults` row and `vault_history` rows into an ignored recovery file. Keep the old `VAULT_OWNER` value with that backup. Set `VAULT_OWNER` to a new unique value and `MIGRATE_LEGACY_OWNER` to `"0"` in the private deployment configuration, then deploy. Owner aliases share the new empty vault; member identities and admission remain unchanged. Check the fresh vault before deleting only the old owner's database rows and revisions.
+
+The changed identity rejects old tabs' vault reads/writes and puts refreshed owner browsers in a fresh storage namespace. Disabling legacy migration prevents an old unscoped browser vault from filling it. Old browser copies and downloaded backups remain encrypted and inactive; this is a fresh active vault, not secure erasure of every device or file. Keep `MIGRATE_LEGACY_OWNER` disabled after the reset. Creating the first new entry requires a new master password chosen in the app.
+
 ## Separate public demo
 
 `npm run build:demo` creates `demo-dist`: a standalone static sample app with memory-only fictional data. It has no Worker, D1 binding, sign-in or sync. Never deploy it over your private service.
