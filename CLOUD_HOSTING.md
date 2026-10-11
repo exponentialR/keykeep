@@ -1,6 +1,6 @@
 # Host Keykeep with optional cloud sync
 
-The cloud build serves a public welcome/request-access page, an admitted-user app at `/app`, and an owner page at `/admin`. Each approved member has a separate encrypted vault. Optional owner aliases share one fixed owner vault.
+The cloud build serves a public homepage at `/`, a separate request form at `/request-access`, an admitted-user app at `/app`, and an owner page at `/admin`. Each approved member has a separate encrypted vault. Optional owner aliases share one fixed owner vault.
 
 This guide describes an experimental deployment, not a security certification. Read the [threat model](docs/THREAT_MODEL.md) first. Start with synthetic entries and retain encrypted backups.
 

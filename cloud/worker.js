@@ -46,6 +46,9 @@ async function handle(request,env){
   if(path==='/'||path==='/index.html'||path==='/welcome.html'){
     return env.ASSETS.fetch(new Request(new URL('/public/',url),request));
   }
+  if(['/request-access','/request-access/','/request-access.html'].includes(path)){
+    return env.ASSETS.fetch(new Request(new URL('/request/',url),request));
+  }
   if(!configured(env))return json({error:'Cloud sign-in is not configured yet.'},503);
   if(url.origin!==env.ORIGIN)return json({error:'Use the configured Keykeep address.'},403);
   const now=Math.floor(Date.now()/1000);

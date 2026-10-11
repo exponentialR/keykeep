@@ -122,6 +122,7 @@ test('public requests require owner approval; guests have isolated vaults and ca
  const owner=await login('owner@example.test'),guest=await login('guest@example.test');
  const send=(path,{token,method='GET',body,vaultId,originHeader=origin,ip='test-ip'}={})=>worker.fetch(new Request(origin+path,{method,headers:{...(token?{Cookie:'__Host-keykeep-session='+token}:{}),Origin:originHeader,'X-Keykeep-Request':'1','Content-Type':'application/json','CF-Connecting-IP':ip,...(vaultId?{'X-Keykeep-Vault':vaultId}:{})},...(body?{body:JSON.stringify(body)}:{})}),env);
  assert.equal(await (await send('/')).text(),'/public/');
+ for(const path of ['/request-access','/request-access/','/request-access.html'])assert.equal(await (await send(path)).text(),'/request/');
  for(const path of ['/app','/app.js','/admin','/admin.js','/account.js'])assert.equal((await send(path)).status,302);
  assert.equal((await send('/api/session',{token:guest})).status,401);
  assert.equal((await send('/api/access-request',{method:'POST',body:{email:'guest@example.test'},originHeader:'https://evil.test'})).status,403);

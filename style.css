@@ -25,3 +25,22 @@ header{padding:16px 32px}.brand{font-size:23px}main{padding:22px 32px}.intro{mar
 #browser-login-note{margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #d8dee7}#browser-login-note .note{margin:0}#login-details{margin:12px 0;padding-top:10px}#login-choice-wrap .note{margin-top:6px}
 
 .browser-review .generator-layout{display:block;max-width:640px}.browser-review .password-source{display:none}.browser-review .generator-builder{margin-bottom:10px}.browser-review #generator-save-form{padding:0;border:0}.browser-review #generator-save-form>h3,.browser-review #generator-save-form>.note,.browser-review #login-details>summary{display:none}.browser-review #login-details{border:0;padding:0;margin-top:0}
+
+/* A separate, single-purpose entrance to the vault. */
+.landing-page{min-height:100svh;display:flex;flex-direction:column;background:#fafbfc;color:#172f50}
+.landing-main{width:min(calc(100% - 96px),1104px);max-width:none;margin:0 auto;padding:48px 0;flex:1;display:flex;align-items:center}
+.landing-hero{width:100%;max-width:780px}
+.landing-eyebrow{margin:0 0 24px;font-size:11px;font-weight:650;letter-spacing:2px;color:#64748b}
+.landing-title{margin:0;font-size:clamp(44px,5vw,72px);font-weight:700;letter-spacing:-2.6px;line-height:1.2}
+.landing-title span{display:block;color:#758397;font-weight:400}
+.landing-description{max-width:530px;margin:30px 0 36px;color:#64748b;font-size:18px;line-height:1.8}
+.landing-enter{display:inline-flex;justify-content:space-between;align-items:center;gap:44px;min-width:210px;min-height:48px;padding:8px 0 14px;border-bottom:1px solid #8a9bb1;color:#193659;font-size:14px;font-weight:650;text-decoration:none}
+.landing-enter span{font-size:24px;line-height:1;transition:transform .15s ease}
+.landing-enter:hover{border-color:#193659}.landing-enter:hover span{transform:translateX(4px)}
+.landing-access{margin:28px 0 0;color:#64748b;font-size:13px}.landing-access a{color:#294969;text-underline-offset:4px}
+.landing-status{max-width:530px;color:#526c8b;font-size:13px;margin:18px 0 0}
+.landing-footer{width:100%;max-width:none;margin:0;padding:20px 48px;border-top:1px solid #dce2e9;display:flex;align-items:center;justify-content:space-between;gap:12px 24px;color:#64748b;font-size:11px}
+.landing-footer>div{display:flex;gap:24px}.landing-footer a{color:inherit;text-decoration:none;padding:6px 0}.landing-footer a:hover{color:#193659;text-decoration:underline;text-underline-offset:4px}
+.access-page{min-height:100svh;display:flex;flex-direction:column}.access-page header{width:100%}.access-main{width:min(calc(100% - 64px),560px);max-width:none;padding:64px 0 48px;flex:1}.access-main>.eyebrow{margin:0 0 12px}.access-main h1{font-size:clamp(32px,4vw,44px);margin:0}.access-description{color:#64748b;font-size:16px;line-height:1.7;margin:18px 0 24px}.access-main form{max-width:440px}.access-main .primary{margin-top:20px}.access-main #request-status{font-size:13px;line-height:1.6;color:#294969}.access-note{font-size:12px;color:#64748b;line-height:1.7;max-width:440px;margin-top:28px}.access-back{display:inline-block;margin-top:16px;padding:8px 0;font-size:13px;color:#294969;text-decoration:none}.access-back:hover{text-decoration:underline}.access-page footer{width:calc(100% - 64px)}
+@media(max-width:640px){.landing-main{width:calc(100% - 48px);padding:48px 0}.landing-eyebrow{font-size:10px;letter-spacing:1.6px;margin-bottom:20px}.landing-title{font-size:clamp(34px,9.5vw,48px);letter-spacing:-1.5px}.landing-description{font-size:16px;margin:24px 0 28px;max-width:420px}.landing-enter{min-width:200px;min-height:48px}.landing-access{margin-top:24px}.landing-footer{padding:16px 24px;font-size:10px}.landing-footer>div{gap:20px}.landing-footer a{min-height:36px;display:inline-flex;align-items:center}.access-main{width:calc(100% - 40px);padding:36px 0}.access-page footer{width:calc(100% - 40px)}}
+@media(prefers-reduced-motion:reduce){.landing-enter span{transition:none}}

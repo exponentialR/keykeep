@@ -6,7 +6,7 @@ test('server serves install assets and rejects unexpected hosts, paths and write
   const server=createServer();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const root=`http://127.0.0.1:${server.address().port}`;
   try {
-    for(const path of ['/','/sw.js','/model.js','/pwa.js','/manifest.webmanifest','/icon-192.png','/icon-512.png']){
+    for(const path of ['/','/welcome','/welcome.js','/request-access','/sw.js','/model.js','/pwa.js','/manifest.webmanifest','/icon-192.png','/icon-512.png']){
       const res=await fetch(root+path);assert.equal(res.status,200,path);assert.match(res.headers.get('content-security-policy'),/frame-ancestors 'none'/);
     }
     assert.equal((await fetch(root+'/constructor')).status,404);

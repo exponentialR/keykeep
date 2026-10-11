@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Request access · Keykeep</title>
+  <meta name="theme-color" content="#1c3558">
+  <link rel="icon" href="/icon.svg">
+  <link rel="stylesheet" href="/style.css?v=homepage1">
+  <script type="module" src="/welcome.js?v=homepage1"></script>
+</head>
+<body class="access-page">
+  <header><a class="brand" href="/">◈ Keykeep</a><a id="welcome-sign-in" href="/auth/login">Enter your vault</a></header>
+  <main class="access-main">
+    <p class="eyebrow">JOIN KEYKEEP</p>
+    <h1>Request access.</h1>
+    <p class="access-description">A private vault for your passwords. Leave your email and we’ll let you know when your access is approved.</p>
+    <form id="request-access">
+      <label for="request-email">Your email</label>
+      <input id="request-email" type="email" autocomplete="email" maxlength="254" required placeholder="you@example.com">
+      <div hidden><label for="website">Website</label><input id="website" tabindex="-1" autocomplete="off"></div>
+      <p class="note">Your email is stored to review your request and notify you about approval. No marketing emails.</p>
+      <button id="request-submit" type="submit" class="primary">Request access</button>
+      <p id="request-status" role="status"></p>
+    </form>
+    <p class="access-note">Each approved user has a separate vault, unlocked with their own master password.</p>
+    <a class="access-back" href="/">← Back to home</a>
+  </main>
+  <footer><span>Keykeep · Personal password storage</span><span>Email sign-in to enter. Master password to unlock.</span></footer>
+</body>
+</html>
