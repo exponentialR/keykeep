@@ -1,5 +1,6 @@
 import {appAddress,checkedLogin} from '../login.js';
 import {readLoginForm} from './capture.js';
+import {configureApp} from './configure.js';
 const $=id=>document.getElementById(id);
 let candidates=[],sourceTab=null,timer;
 const status=text=>{$('status').textContent=text;};
@@ -33,11 +34,8 @@ $('connect').onsubmit=async event=>{
   event.preventDefault();
   try{
     const app=appAddress($('app').value);
-    // Start both while the click has user activation; the worker survives the dialog.
-    const setup=send({type:'prepare-configure',app});
-    const granted=await chrome.permissions.request({origins:[new URL(app).origin+'/*']});
-    if(!granted)throw new Error('Permission was not granted. Keykeep needs access to its own host to receive the login.');
-    await setup;await send({type:'configure',app});$('app').value=app;$('open').href=app;$('open').hidden=false;status('Connected. Sign in to Keykeep, then return to your login website.');
+    await configureApp(app,{send,requestPermission:options=>chrome.permissions.request(options)});
+    $('app').value=app;$('open').href=app;$('open').hidden=false;status('Connected. Sign in to Keykeep, then return to your login website.');
   }catch(error){status(error.message);}
 };
 window.addEventListener('pagehide',clear);

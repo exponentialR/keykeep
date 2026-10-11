@@ -5,7 +5,26 @@ import {readFile} from 'node:fs/promises';
 import {websiteOrigin,appAddress,checkedLogin,matchingLogins} from './login.js';
 import {createHandoffs} from './extension/handoff.js';
 import {readLoginForm} from './extension/capture.js';
+import {configureApp} from './extension/configure.js';
 const login={name:'Sample mail',username:'alex@example.com',password:' fictional secret ',website:'https://mail.example.com'};
+test('connection supports an older worker without delaying the user-activated permission request',async()=>{
+  const app='https://vault.example.com/app',calls=[];
+  await configureApp(app,{
+    send:async message=>{calls.push(message.type);if(message.type==='prepare-configure')throw new Error('Unknown request.');return {ok:true};},
+    requestPermission:async options=>{calls.push('permission');assert.deepEqual(options.origins,['https://vault.example.com/*']);return true;}
+  });
+  assert.deepEqual(calls,['prepare-configure','permission','configure']);
+});
+test('connection preserves worker failures and never configures after denied permission',async()=>{
+  for(const granted of [false,true]){
+    const calls=[];
+    await assert.rejects(configureApp('https://vault.example.com/app',{
+      send:async message=>{calls.push(message.type);throw new Error('Untrusted request.');},
+      requestPermission:async()=>granted
+    }),granted?/Untrusted request/:/Permission was not granted/);
+    assert.deepEqual(calls,['prepare-configure']);
+  }
+});
 test('login capture strips URL secrets, rejects unsafe destinations, and matches only active same-origin accounts',()=>{
   assert.equal(websiteOrigin('https://mail.example.com/login?token=secret#secret'),login.website);
   for(const url of ['http://example.com','javascript:alert(1)','https://user:pass@example.com'])assert.throws(()=>websiteOrigin(url));

@@ -1,10 +1,10 @@
 # Verification record
 
-Release candidate: 0.3.0-beta.2. Recorded 11 October 2026.
+Release candidate: 0.3.0-beta.3. Recorded 11 October 2026.
 
 ## Automated checks
 
-- `npm test`: 38 passed, zero failures.
+- `npm test`: 40 passed, zero failures.
 - `npm audit --omit=dev`: no known advisories at the recorded run. This is a dependency check, not a source audit.
 - `npm run build:demo`: creates the isolated static demonstration.
 - `npm run build:cloud`: bundles the Pages Worker and private application assets.
@@ -39,6 +39,8 @@ The release is experimental. Version 1.0 is not claimed.
 
 ## Browser login capture
 
-The extension uses a user-click capture and one-use app handoff; the app saves only after confirmation. Automated checks include wrong-tab, frame, origin, token replay and expiry rejection, worker behaviour using mocked Chrome APIs, masked review, duplicate update choice and encrypted revision history. Local browser UI checks use fictional data. Installing the actual extension and checking Chrome/Edge permission prompts is a separate remaining browser validation step; these tests are not marketplace approval or an independent security audit.
+The extension uses a user-click capture and one-use app handoff; the app saves only after confirmation. Automated checks include wrong-tab, frame, origin, token replay and expiry rejection, worker behaviour using mocked Chrome APIs, masked review, duplicate update choice and encrypted revision history. Browser UI checks use fictional data; these tests are not marketplace approval or an independent security audit.
 
-Installed Chrome trial confirmed version 0.3.0 is enabled and the optional host permission prompt works. That trial found the popup is closed during permission granting; setup now stages the non-secret app address in the worker and completes on the permission-added event or worker restart. A regression test covers completion without a surviving popup. The patched extension needs a manual reload before capture/handoff validation; final save still needs the owner to unlock the live vault.
+Installed Chrome trial confirmed version 0.3.0 is enabled and the optional host permission prompt works. That trial found the popup is closed during permission granting; setup now stages the non-secret app address in the worker and completes on the permission-added event or worker restart. A regression test covers completion without a surviving popup.
+
+An updated popup talking to the older installed worker initially reported “Unknown request.” Connection now falls back to the worker's existing configure message for that specific unsupported preparation response, while preserving other failures and denied permissions. The installed Chrome trial then connected successfully, captured a fictional password from the HTTPS demo with masked review, and opened the configured private app. The private app redirected to its public welcome page because sign-in had expired. The final authenticated handoff and encrypted save remain pending owner sign-in/unlock. Edge and a freshly reloaded worker still need a real browser trial.
