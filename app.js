@@ -395,9 +395,17 @@ if(globalThis.location?.protocol === 'https:'&&!account.demo) {
         for(const [value,label]of [['','Choose a version'],['both','Keep both versions'],['local','Keep this device’s version'],['cloud','Keep the cloud version']]){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);}
         select.onchange=()=>choices[row.id]=select.value;item.append(select);
         for(const [source,entry]of [['This device',row.local],['Cloud',row.cloud]]){
-          const detail=document.createElement('p');detail.textContent=`${source}: ${entry.name} · ${entry.deletedAt?'Deleted':'Active'} · Updated ${timestamp(entry.updatedAt)}`;
+          const detail=document.createElement('p');detail.textContent=`${source}: ${entry.name} · ${entry.username||'No username'} · ${entry.deletedAt?'Deleted '+timestamp(entry.deletedAt):'Active'} · Created ${timestamp(entry.createdAt)} · Updated ${timestamp(entry.updatedAt)}`;
           const value=document.createElement('input');value.type='password';value.readOnly=true;value.value=entry.password;value.setAttribute('aria-label',source+' password for '+entry.name);
           const show=document.createElement('button');show.type='button';show.textContent='Show '+source.toLowerCase()+' password';show.onclick=()=>{value.type=value.type==='password'?'text':'password';show.textContent=(value.type==='password'?'Show ':'Hide ')+source.toLowerCase()+' password';};item.append(detail,value,show);
+          if(entry.history?.length){
+            const history=document.createElement('details'),summary=document.createElement('summary');summary.textContent=`${source} history · ${entry.history.length} previous versions`;history.append(summary);
+            entry.history.forEach((version,index)=>{
+              const description=document.createElement('p');description.textContent=`${version.name} · ${version.username||'No username'} · Updated ${timestamp(version.updatedAt)} · Replaced ${timestamp(version.archivedAt)}`;
+              const password=document.createElement('input');password.type='password';password.readOnly=true;password.value=version.password;password.setAttribute('aria-label',`${source} previous password ${index+1} for ${entry.name}`);
+              const reveal=document.createElement('button');reveal.type='button';reveal.textContent='Show previous password';reveal.onclick=()=>{password.type=password.type==='password'?'text':'password';reveal.textContent=password.type==='password'?'Show previous password':'Hide previous password';};history.append(description,password,reveal);
+            });item.append(history);
+          }
         }
       }
       $('merge-entries').append(item);
