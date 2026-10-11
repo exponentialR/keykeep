@@ -16,6 +16,7 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm audit --omit=dev
+      - run: npm run build:extension
       - run: npm run build:demo
       - run: npm run build:cloud
       - run: git diff --check

@@ -101,7 +101,7 @@ async function handle(request,env){
     return new Response(null,{status:204,headers:{'Set-Cookie':cookie('__Host-keykeep-session','',0)}});
   }
   if(path==='/app'&&request.method==='GET')return env.ASSETS.fetch(new Request(new URL('/private/',url),request));
-  const appAssets=['/app.js','/account.js','/crypto.js','/model.js','/reconcile.js','/sync.js','/pwa.js'];
+  const appAssets=['/app.js','/account.js','/login.js','/crypto.js','/model.js','/reconcile.js','/sync.js','/pwa.js'];
   if(appAssets.includes(path)&&request.method==='GET')return env.ASSETS.fetch(request);
   if(path==='/admin'||path==='/admin.js'||path==='/api/access-requests'){
     if(!allowedEmail(user.email,env))return json({error:'Owner access required.'},403);

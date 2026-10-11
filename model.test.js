@@ -10,3 +10,10 @@ test('history is bounded, excludes nested history and supports reversible restor
   const restored=restoreVersion(entry,0);assert.equal(restored.password,'password-23');assert.equal(restored.history[0].password,'password-24');
   assert.equal(restored.createdAt,entry.createdAt);assert.throws(()=>restoreVersion(entry,50));
 });
+test('website edits are encrypted history changes and old revisions restore without a website',()=>{
+  const original={id:'1',name:'Mail',username:'u',password:'secret'};
+  const updated=editEntry(original,{name:'Mail',username:'u',password:'secret',website:'https://mail.example.com'});
+  assert.equal(updated.website,'https://mail.example.com');assert.equal(updated.history[0].website,'');
+  assert.equal(editEntry(updated,{name:'Mail',username:'u',password:'secret'}),updated);
+  const restored=restoreVersion(updated,0);assert.equal(restored.website,'');assert.equal(restored.history[0].website,'https://mail.example.com');
+});

@@ -1,0 +1,10 @@
+import {mkdir,rm,copyFile,readFile,writeFile} from 'node:fs/promises';
+import {spawnSync} from 'node:child_process';
+const directory='.build/keykeep-extension';
+await rm(directory,{recursive:true,force:true});await mkdir(directory,{recursive:true});
+for(const name of ['manifest.json','popup.html','popup.css','capture.js','bridge.js'])await copyFile('extension/'+name,directory+'/'+name);
+for(const name of ['popup.js','background.js','handoff.js'])await writeFile(directory+'/'+name,(await readFile('extension/'+name,'utf8')).replaceAll("'../login.js'","'./login.js'"));
+await copyFile('login.js',directory+'/login.js');await copyFile('icon-192.png',directory+'/icon-192.png');
+await rm('.build/keykeep-extension.zip',{force:true});
+const result=spawnSync('zip',['-q','-r','../keykeep-extension.zip','.'],{cwd:directory,stdio:'inherit'});if(result.status)process.exit(result.status);
+console.log('Unpacked extension: '+directory+'\nDownload bundle: .build/keykeep-extension.zip');

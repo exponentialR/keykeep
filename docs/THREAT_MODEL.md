@@ -34,3 +34,7 @@ If a device or network fails during a combined upload, the combined local cipher
 Cryptographic envelope validation, wrong-password/tampering paths, OIDC claims/PKCE/state/nonce, session isolation, CSRF, CSP/XSS, stale-tab key changes, interrupted sync, conflict reconciliation, tombstones/history, backup import and dependency/build integrity.
 
 See [REVIEW_BRIEF.md](REVIEW_BRIEF.md) and [VERIFICATION.md](VERIFICATION.md).
+
+## Optional browser extension
+
+The click-to-save extension reads only the active page after a toolbar click. An optional permission enables a bridge on the user-selected trusted Keykeep host. Logins are handed off in memory with a one-use, expiring token bound to one app tab/main frame, then require explicit application confirmation and vault unlock before encryption. No plaintext goes in URLs or extension storage. Browser/device compromise and malicious Keykeep-host JavaScript remain outside this protection. See [extension scope and limits](BROWSER_EXTENSION.md). Website origins are encrypted with entries and history; old entries without this optional field remain readable.

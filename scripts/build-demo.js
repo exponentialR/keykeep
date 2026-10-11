@@ -12,4 +12,4 @@ await writeFile('demo-dist/_headers',`/*
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Cache-Control: no-store
 `);
-for(const name of ['app.js','account.js','demo.js','crypto.js','model.js','sync.js','reconcile.js','style.css','icon.svg','icon-192.png','icon-512.png'])await copyFile(name,'demo-dist/'+name);
+for(const name of ['app.js','account.js','demo.js','login.js','crypto.js','model.js','sync.js','reconcile.js','style.css','icon.svg','icon-192.png','icon-512.png'])await copyFile(name,'demo-dist/'+name);

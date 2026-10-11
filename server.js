@@ -1,9 +1,9 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
-const demoFiles=['app.js','account.js','demo.js','crypto.js','model.js','sync.js','reconcile.js','style.css','icon.svg','icon-192.png','icon-512.png'];
+const demoFiles=['app.js','account.js','demo.js','login.js','crypto.js','model.js','sync.js','reconcile.js','style.css','icon.svg','icon-192.png','icon-512.png'];
 const files = new Map([
-  ['/',['index.html','text/html']], ['/demo',['demo-dist/index.html','text/html']], ['/demo/',['demo-dist/index.html','text/html']], ...demoFiles.map(name=>['/demo/'+name,['demo-dist/'+name,name.endsWith('.js')?'text/javascript':name.endsWith('.css')?'text/css':name.endsWith('.svg')?'image/svg+xml':'image/png']]), ...['app.js','account.js','crypto.js','model.js','sync.js','reconcile.js','pwa.js','sw.js'].map(name=>['/'+name,[name,'text/javascript']]),
+  ['/',['index.html','text/html']], ['/demo',['demo-dist/index.html','text/html']], ['/demo/',['demo-dist/index.html','text/html']], ...demoFiles.map(name=>['/demo/'+name,['demo-dist/'+name,name.endsWith('.js')?'text/javascript':name.endsWith('.css')?'text/css':name.endsWith('.svg')?'image/svg+xml':'image/png']]), ...['app.js','account.js','login.js','crypto.js','model.js','sync.js','reconcile.js','pwa.js','sw.js'].map(name=>['/'+name,[name,'text/javascript']]),
   ['/style.css',['style.css','text/css']], ['/manifest.webmanifest',['manifest.webmanifest','application/manifest+json']],
   ['/icon.svg',['icon.svg','image/svg+xml']], ...[192,512].map(size=>[`/icon-${size}.png`,[`icon-${size}.png`,'image/png']]),
 ]);

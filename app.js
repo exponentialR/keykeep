@@ -3,13 +3,16 @@ import {presets,editEntry,restoreVersion} from './model.js';
 import {markChanged,startCloudSync} from './sync.js?v=access1';
 import {accountContext} from './account.js?v=access1';
 import {compareVaults,combineVaults} from './reconcile.js';
+import {websiteOrigin,checkedLogin,matchingLogins,captureNonce} from './login.js';
+const browserNonce=captureNonce(globalThis.location?.hash);
+if(browserNonce)history.replaceState(null,'',location.pathname+location.search);
 const account=await accountContext();
 const localStorage=account.storage;
 let cloud;
 const $ = id => document.getElementById(id);
 const storage = 'keykeep.v1', backupStorage = 'keykeep.backup.v1';
 let session = null, timer, revision = 0, busy = false, editingId = null, existingMode = false, undoId = null, historyId = null, pendingImport = null;
-let mergePreview=null;
+let mergePreview=null, browserLogin=null, browserTimer, bridgeTimer, browserChoice='';
 const message = text => { $('message').textContent = text; };
 const blob = () => JSON.parse(localStorage.getItem(storage) || 'null');
 const indexFor = entries => entries.filter(e => !e.deletedAt).map(({id,name,createdAt,updatedAt}) => ({id,name,createdAt,updatedAt}));
@@ -39,13 +42,14 @@ function authUI() {
   $('save-auth-note').textContent = account.demo?'Demo master password: keykeep-demo-only. Use sample passwords here.':exists
     ? 'Enter your master password to save securely.'
     : 'Choose a master password (at least 12 characters) for your first save. You will use it to open your saved passwords. It cannot be recovered.';
+  browserLoginChoices();
   $('vault-status').textContent = session ? 'UNLOCKED' : 'LOCKED';
   $('vault-description').textContent = account.demo?'Unlock the sample vault with keykeep-demo-only.':'Enter your master password to display the passwords below.';
 }
 function resetEditor() {
   editingId = null;
   $('save-form').reset();
-  for (const id of ['name','username','saved-password']) $(id).value = '';
+  for (const id of ['name','username','website','saved-password']) $(id).value = '';
   $('save-form').hidden = true;
 }
 function lock() {
@@ -60,6 +64,7 @@ function lock() {
   resetEditor();
   regenerate(); // Do not leave a just-saved password visible in the generator after locking.
   authUI();
+  clearBrowserLogin();
   render();
 }
 function touch() {
@@ -149,7 +154,7 @@ function render() {
   const all = session ? session.entries.filter(e => !e.deletedAt) : publicEntries();
   $('entry-count').textContent = !session&&blob()&&!Array.isArray(blob().index)?'(unlock to view)':`(${all.length})`;
   const query = $('search').value.toLowerCase();
-  const entries = all.filter(e => `${e.name} ${e.username || ''}`.toLowerCase().includes(query));
+  const entries = all.filter(e => `${e.name} ${e.username || ''} ${e.website || ''}`.toLowerCase().includes(query));
   if (!entries.length) {
     const p = document.createElement('p'); p.className = 'note';
     p.textContent = query ? 'No matching passwords.' : !session && blob() && !Array.isArray(blob().index)
@@ -163,6 +168,7 @@ function render() {
     const user = document.createElement('p'); user.textContent = session ? entry.username || 'No username' : 'Password locked';
     const dates = document.createElement('p'); dates.textContent = `Created: ${timestamp(entry.createdAt)} · Updated: ${timestamp(entry.updatedAt)}`;
     detail.append(name,user,dates);
+    if(session && entry.website){const website=document.createElement('p');website.textContent=entry.website;detail.append(website);}
     const actions = document.createElement('div'); actions.className = 'entry-actions';
     const button = (label,fn) => { const el = document.createElement('button'); el.textContent = label; el.onclick = fn; actions.append(el); };
     if (session) {
@@ -171,7 +177,7 @@ function render() {
       button('Copy',() => copy(entry.password));
       button('Edit',() => {
         editingId = entry.id; $('save-form').hidden = false;
-        $('name').value = entry.name; $('username').value = entry.username; $('saved-password').value = entry.password;
+        $('name').value = entry.name; $('username').value = entry.username; $('website').value=entry.website || ''; $('saved-password').value = entry.password;
         $('name').focus(); $('save-form').scrollIntoView({behavior:'smooth',block:'start'});
       });
       button('Delete',() => action(async () => {
@@ -240,8 +246,21 @@ $('generator-save-form').onsubmit = e => {
     const name = $('new-name').value.trim(), password = existingMode ? $('existing-password').value : $('generated').value;
     if (!name || !password) throw new Error('Enter or generate a password and give it a name.');
     if (!session) await openVault($('save-master').value,$('save-confirm').value);
+    const website=websiteOrigin($('new-website').value.trim()),username=$('new-username').value.trim();
     const now = new Date().toISOString();
-    await persist([...session.entries,{id:crypto.randomUUID(),name,username:'',password,createdAt:now,updatedAt:now}]);
+    if(browserLogin){
+      checkedLogin({name,username,website,password});
+      if(browserLogin.expires <= Date.now()){clearBrowserLogin();throw new Error('Browser login expired. Read it again with the extension.');}
+      const choices=matchingLogins(session.entries,{website,username}),choice=browserChoice;
+      if(choices.length && !choice)throw new Error('A login already matches this website and account. Choose whether to update it or save a new login.');
+      if(choice && choice !== 'new'){
+        const existing=choices.find(entry=>entry.id===choice);if(!existing)throw new Error('The matching login changed. Review it again.');
+        const updated=editEntry(existing,{name,username,website,password});
+        await persist(session.entries.map(entry=>entry.id===existing.id?updated:entry));
+      }else await persist([...session.entries,{id:crypto.randomUUID(),name,username,website,password,createdAt:now,updatedAt:now}]);
+      clearBrowserLogin();
+    }else await persist([...session.entries,{id:crypto.randomUUID(),name,username,website,password,createdAt:now,updatedAt:now}]);
+    $('new-username').value='';$('new-website').value='';
     $('new-name').value = '';
     $('existing-password').value = '';
     $('existing-password').type = 'password'; $('show-existing').textContent = 'Show password';
@@ -260,7 +279,7 @@ $('save-form').onsubmit = e => {
     if (!name || !password) throw new Error('Enter a name and password.');
     const existing = session.entries.find(e => e.id === editingId);
     if (!existing) throw new Error('This entry no longer exists.');
-    const entry = editEntry(existing,{name,username,password});
+    const entry = editEntry(existing,{name,username,password,website:websiteOrigin($('website').value.trim())});
     await persist(session.entries.map(e => e.id === entry.id ? entry : e));
     resetEditor(); message('Password updated.');
   });
@@ -314,7 +333,7 @@ function renderHistory() {
   for (const [index,version] of (entry.history || []).entries()) {
     const row = document.createElement('article'); row.className = 'entry';
     const detail = document.createElement('div'), label = document.createElement('p');
-    label.textContent = `${version.name} · ${version.username || 'No username'} · Replaced ${timestamp(version.archivedAt)}`;
+    label.textContent = `${version.name} · ${version.username || 'No username'}${version.website?' · '+version.website:''} · Replaced ${timestamp(version.archivedAt)}`;
     const secret = document.createElement('input'); secret.type = 'text'; secret.readOnly = true; secret.value = version.password;
     secret.setAttribute('aria-label',`Previous password ${index+1} for ${entry.name}`); detail.append(label,secret);
     const restore = document.createElement('button'); restore.textContent = 'Restore version';
@@ -395,13 +414,13 @@ if(globalThis.location?.protocol === 'https:'&&!account.demo) {
         for(const [value,label]of [['','Choose a version'],['both','Keep both versions'],['local','Keep this device’s version'],['cloud','Keep the cloud version']]){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);}
         select.onchange=()=>choices[row.id]=select.value;item.append(select);
         for(const [source,entry]of [['This device',row.local],['Cloud',row.cloud]]){
-          const detail=document.createElement('p');detail.textContent=`${source}: ${entry.name} · ${entry.username||'No username'} · ${entry.deletedAt?'Deleted '+timestamp(entry.deletedAt):'Active'} · Created ${timestamp(entry.createdAt)} · Updated ${timestamp(entry.updatedAt)}`;
+          const detail=document.createElement('p');detail.textContent=`${source}: ${entry.name} · ${entry.username||'No username'}${entry.website?' · '+entry.website:''} · ${entry.deletedAt?'Deleted '+timestamp(entry.deletedAt):'Active'} · Created ${timestamp(entry.createdAt)} · Updated ${timestamp(entry.updatedAt)}`;
           const value=document.createElement('input');value.type='password';value.readOnly=true;value.value=entry.password;value.setAttribute('aria-label',source+' password for '+entry.name);
           const show=document.createElement('button');show.type='button';show.textContent='Show '+source.toLowerCase()+' password';show.onclick=()=>{value.type=value.type==='password'?'text':'password';show.textContent=(value.type==='password'?'Show ':'Hide ')+source.toLowerCase()+' password';};item.append(detail,value,show);
           if(entry.history?.length){
             const history=document.createElement('details'),summary=document.createElement('summary');summary.textContent=`${source} history · ${entry.history.length} previous versions`;history.append(summary);
             entry.history.forEach((version,index)=>{
-              const description=document.createElement('p');description.textContent=`${version.name} · ${version.username||'No username'} · Updated ${timestamp(version.updatedAt)} · Replaced ${timestamp(version.archivedAt)}`;
+              const description=document.createElement('p');description.textContent=`${version.name} · ${version.username||'No username'}${version.website?' · '+version.website:''} · Updated ${timestamp(version.updatedAt)} · Replaced ${timestamp(version.archivedAt)}`;
               const password=document.createElement('input');password.type='password';password.readOnly=true;password.value=version.password;password.setAttribute('aria-label',`${source} previous password ${index+1} for ${entry.name}`);
               const reveal=document.createElement('button');reveal.type='button';reveal.textContent='Show previous password';reveal.onclick=()=>{password.type=password.type==='password'?'text':'password';reveal.textContent=password.type==='password'?'Show previous password':'Hide previous password';};history.append(description,password,reveal);
             });item.append(history);
@@ -425,4 +444,52 @@ if(globalThis.location?.protocol === 'https:'&&!account.demo) {
     lock();
     try{const response=await fetch('/api/logout',{method:'POST',headers:{'X-Keykeep-Request':'1'}});if(!response.ok)throw new Error();connection(false);location.replace('/');}catch{update('Vault locked. Could not confirm cloud sign-out; reconnect and try again.',false);}
   };
+}
+
+function clearBrowserLogin() {
+  if(!browserLogin)return;
+  $('generator-view').classList?.remove('browser-review');$('generator-heading').textContent='Create a password';
+  browserLogin=null;browserChoice='';clearTimeout(browserTimer);$('login-choice').replaceChildren();
+  $('browser-login-note').hidden=true;$('login-choice-wrap').hidden=true;
+  for(const id of ['new-name','new-username','new-website','existing-password'])$(id).value='';
+  $('existing-password').type='password';$('show-existing').textContent='Show password';
+  passwordMode(false);
+}
+function browserLoginChoices() {
+  if(!browserLogin)return;
+  const select=$('login-choice'),selected=select.value;select.replaceChildren();
+  let website='';try{website=websiteOrigin($('new-website').value.trim());}catch{}
+  const choices=session?matchingLogins(session.entries,{website,username:$('new-username').value.trim()}):[];
+  const options=!session?[['','Unlock to check for existing logins']]:[...(choices.length?[['','Choose what to save']]:[]),['new','Save as a new login'],...choices.map(entry=>[entry.id,'Update '+entry.name])];
+  for(const [value,label]of options){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);}
+  select.disabled=!session;select.value=options.some(([value])=>value===selected)?selected:choices.length||!session?'':'new';
+  $('login-choice-wrap').hidden=false;
+}
+for(const id of ['new-username','new-website'])$(id).addEventListener('input',()=>{browserChoice='';$('login-choice').value='';browserLoginChoices();});
+$('login-choice').onchange=()=>{browserChoice=$('login-choice').value;};
+$('cancel-browser-login').onclick=()=>{clearBrowserLogin();message('Browser login discarded. Nothing was saved.');};
+if(browserNonce && !account.demo){
+  let received=false,attempts=0;
+  const listener=event=>{
+    if(received || event.source!==window || event.origin!==location.origin || event.data?.type!=='keykeep-login' || event.data.nonce!==browserNonce)return;
+    try{
+      const login=checkedLogin(event.data.login),expires=event.data.login.expires;
+      if(!Number.isFinite(expires) || expires<=Date.now() || expires>Date.now()+120000)throw new Error('Browser login expired. Read it again with the extension.');
+      received=true;browserChoice='';clearInterval(bridgeTimer);window.removeEventListener('message',listener);
+      browserLogin={...login,expires};
+      $('generator-view').classList?.add('browser-review');$('generator-heading').textContent='Review this login';
+      view(false);passwordMode(true);
+      for(const [id,key]of [['new-name','name'],['new-username','username'],['new-website','website'],['existing-password','password']])$(id).value=login[key];
+      $('browser-login-note').hidden=false;$('login-details').open=true;browserLoginChoices();
+      browserTimer=setTimeout(()=>{clearBrowserLogin();message('Browser login cleared after 2 minutes. Read it again to continue.');},expires-Date.now());
+      message('Review this login and click Save password. Your vault master password is required if locked.');
+    }catch(error){message(error.message);}
+  };
+  window.addEventListener('message',listener);
+  const ready=()=>{
+    if(++attempts>120){clearInterval(bridgeTimer);window.removeEventListener('message',listener);message('No browser login received. Sign in, then read the login again with the extension.');return;}
+    window.postMessage({type:'keykeep-ready',nonce:browserNonce},location.origin);
+  };
+  bridgeTimer=setInterval(ready,500);ready();
+  window.addEventListener('pagehide',()=>{clearInterval(bridgeTimer);window.removeEventListener('message',listener);});
 }

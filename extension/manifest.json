@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Keykeep · Save this login",
+  "version": "0.3.0",
+  "description": "Review and save a website login to your encrypted Keykeep vault when you click the extension.",
+  "minimum_chrome_version": "102",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "optional_host_permissions": ["https://*/*"],
+  "action": {"default_title": "Save this login to Keykeep", "default_popup": "popup.html"},
+  "background": {"service_worker": "background.js", "type": "module"},
+  "icons": {"128": "icon-192.png"},
+  "content_security_policy": {"extension_pages": "script-src 'self'; object-src 'none'; connect-src 'none'; base-uri 'none'"}
+}

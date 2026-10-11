@@ -1,6 +1,6 @@
 {
   "name": "keykeep",
-  "version": "0.2.0-beta.2",
+  "version": "0.3.0-beta.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,8 @@
     "build:demo": "node scripts/build-demo.js",
     "demo": "node scripts/build-demo.js && node server.js",
     "deploy:personal": "node scripts/deploy-personal.js",
-    "deploy:demo": "node scripts/deploy-demo.js"
+    "deploy:demo": "node scripts/deploy-demo.js",
+    "build:extension": "node scripts/build-extension.js"
   },
   "engines": {
     "node": ">=24"

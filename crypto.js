@@ -1,3 +1,4 @@
+import {websiteOrigin} from './login.js';
 const groups = {lower:'abcdefghijklmnopqrstuvwxyz',upper:'ABCDEFGHIJKLMNOPQRSTUVWXYZ',numbers:'0123456789',symbols:'!@#$%^&*()-_=+[]{};:,.?'};
 function randomIndex(n) {
   const a = new Uint32Array(1), limit = Math.floor(4294967296/n)*n;
@@ -40,7 +41,10 @@ export async function unlock(blob,password) {
   const salt=decode(blob.salt),key=await derive(password,salt);
   const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:decode(blob.iv)},key,decode(blob.data));
   const entries=JSON.parse(new TextDecoder().decode(plain));
-  const fields = e => e && ['name','username','password'].every(k=>typeof e[k]==='string');
+  const fields = e => {
+    if (!e || !['name','username','password'].every(k=>typeof e[k]==='string')) return false;
+    try { return e.website === undefined || (typeof e.website === 'string' && websiteOrigin(e.website) === e.website); } catch { return false; }
+  };
   const date = value => value == null || (typeof value === 'string' && Number.isFinite(Date.parse(value)));
   if(!Array.isArray(entries)||!entries.every(e=>fields(e)&&typeof e.id==='string'&&date(e.createdAt)&&date(e.updatedAt)&&date(e.deletedAt)&&(e.history===undefined||(Array.isArray(e.history)&&e.history.length<=20&&e.history.every(h=>fields(h)&&date(h.updatedAt)&&date(h.archivedAt)))))||new Set(entries.map(e=>e.id)).size!==entries.length) throw new Error('Invalid vault contents.');
   return {key,salt,entries};

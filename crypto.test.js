@@ -15,3 +15,11 @@ test('malformed encrypted history is rejected on unlock',async()=>{
   const encrypted=await encrypt([{id:'1',name:'Example',username:'user',password:'secret',history:[{password:42}]}],key,salt);
   await assert.rejects(unlock(encrypted,'a test master password'),/Invalid vault contents/);
 });
+test('optional website origins survive encryption and invalid website metadata is rejected',async()=>{
+  const master='synthetic origin master',salt=crypto.getRandomValues(new Uint8Array(16)),key=await derive(master,salt);
+  const entry={id:'origin',name:'Example',username:'u',password:'secret',website:'https://mail.example.com'};
+  const encrypted=await encrypt([entry],key,salt);assert.ok(!JSON.stringify(encrypted).includes(entry.website));assert.deepEqual((await unlock(encrypted,master)).entries,[entry]);
+  for(const website of [42,'javascript:alert(1)','https://mail.example.com/login?token=secret']){
+    await assert.rejects(unlock(await encrypt([{...entry,website}],key,salt),master),/Invalid vault contents/);
+  }
+});

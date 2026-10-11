@@ -13,7 +13,10 @@ test('generate → named save → locked names → master password → plain pas
   const elements=Object.fromEntries([...html.matchAll(/id="([^"]+)"/g)].map(m=>[m[1],new Element()]));
   elements.length.value='20';elements.ambiguous.checked=false;
   globalThis.document={getElementById:id=>{assert.ok(elements[id],`missing element ${id}`);return elements[id];},createElement:()=>new Element(),addEventListener(){}};
-  globalThis.window={addEventListener(){}};
+  const nonce=crypto.randomUUID(),listeners=new Map();
+  globalThis.location={protocol:'http:',origin:'http://127.0.0.1:4999',pathname:'/',search:'',hash:'#keykeep-save='+nonce};
+  globalThis.history={replaceState(){globalThis.location.hash='';}};
+  globalThis.window={addEventListener:(name,fn)=>listeners.set(name,fn),removeEventListener:name=>listeners.delete(name),postMessage(){}};
   Object.defineProperty(globalThis,'navigator',{configurable:true,value:{locks:{request:async(name,fn)=>fn()}}});
   const stored=new Map();globalThis.localStorage={getItem:k=>stored.get(k)??null,setItem:(k,v)=>stored.set(k,v),removeItem:k=>stored.delete(k)};
   await import('./app.js');
@@ -57,6 +60,7 @@ test('generate → named save → locked names → master password → plain pas
     elements['existing-mode'].onclick();
     assert.equal(elements['generation-controls'].hidden,true);
     elements['new-name'].value='Existing account';elements['existing-password'].value='  existing-secret  ';
+    elements['new-username'].value='alex@example.com';elements['new-website'].value='https://mail.example.com/login?token=omit';
     await submit('generator-save-form');
     assert.equal(elements['existing-password'].value,'');
     let decrypted=await unlock(JSON.parse(stored.get('keykeep.v1')),master);
@@ -81,7 +85,7 @@ test('generate → named save → locked names → master password → plain pas
     assert.equal(elements['deleted-entries'].children.length,1);
     await elements['deleted-entries'].children[0].children[1].onclick();
     assert.equal(elements['entry-count'].textContent,'(3)');
-    assert.equal(elements.entries.children[2].children[0].children[3].value,'  existing-secret  ');
+    assert.equal(elements.entries.children[2].children[0].children.find(el=>el.type==='text').value,'  existing-secret  ');
     // Unlocking only refreshes the index; it must not mark an exported vault as changed.
     elements.export.onclick();elements.lock.onclick();elements.master.value=master;await submit('unlock-form');
     assert.match(elements['backup-status'].textContent,/No changes since/);
@@ -120,5 +124,28 @@ test('generate → named save → locked names → master password → plain pas
     elements['new-name'].value='Stale write';elements['existing-password'].value='must not save';
     await submit('generator-save-form');assert.match(elements.message.textContent,/another window/);
     assert.equal(stored.get('keykeep.v1'),JSON.stringify(other));
+    // Browser handoff is review-only; updating a matching login needs an explicit choice.
+    elements.lock.onclick();elements.master.value='replacement master password';await submit('unlock-form');
+    const login={name:'Browser mail',username:'alex@example.com',password:'browser-synthetic-secret',website:'https://mail.example.com',expires:Date.now()+120000};
+    const receive=listeners.get('message');
+    receive({source:window,origin:location.origin,data:{type:'keykeep-login',nonce:'wrong',login}});
+    assert.notEqual(elements['existing-password'].value,login.password);
+    const beforeBrowser=stored.get('keykeep.v1');
+    receive({source:window,origin:location.origin,data:{type:'keykeep-login',nonce,login}});
+    assert.equal(elements['existing-password'].value,login.password);assert.equal(elements['browser-login-note'].hidden,false);
+    assert.equal(stored.get('keykeep.v1'),beforeBrowser);
+    await submit('generator-save-form');assert.match(elements.message.textContent,/Choose whether/);
+    assert.equal(stored.get('keykeep.v1'),beforeBrowser);
+    const match=(await unlock(JSON.parse(beforeBrowser),'replacement master password')).entries.find(e=>e.website===login.website);
+    elements['login-choice'].value=match.id;elements['login-choice'].onchange();
+    await submit('generator-save-form');
+    const afterBrowser=(await unlock(JSON.parse(stored.get('keykeep.v1')),'replacement master password')).entries;
+    assert.equal(afterBrowser.length,3);assert.equal(afterBrowser.find(e=>e.id===match.id).password,login.password);
+    assert.equal(afterBrowser.find(e=>e.id===match.id).history[0].password,'  existing-secret  ');
+    assert.equal(elements['existing-password'].value,'');assert.equal(elements['browser-login-note'].hidden,true);
+    assert.ok(!stored.get('keykeep.v1').includes(login.website));assert.ok(!stored.get('keykeep.v1').includes(login.password));
+    receive({source:window,origin:location.origin,data:{type:'keykeep-login',nonce,login}});
+    assert.equal(elements['existing-password'].value,'');
+
   }finally{elements.lock.onclick();}
 });

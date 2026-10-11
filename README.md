@@ -69,3 +69,7 @@ npm run build:cloud
 Checks cover application lifecycle, encryption, recovery, account separation, Worker admission, sync, conflict resolution and email retries. Simulated clients are used for automated cloud tests; they are not a real multi-PC sign-in trial or an independent audit.
 
 See [contribution guidance](CONTRIBUTING.md), [known verification limits](docs/VERIFICATION.md) and the [release plan](RELEASE_PLAN.md). A short [sample walkthrough](docs/assets/walkthrough.mp4) is included. Community launch copy is available as [unsent drafts](docs/LAUNCH_DRAFTS.md).
+
+## Save logins from websites
+
+The experimental Chrome/Edge extension lets you read a filled login when you click the toolbar, review it in Keykeep and explicitly save or update it in your encrypted vault. See [installation and usage](docs/BROWSER_EXTENSION.md). Build it with `npm run build:extension`; load `.build/keykeep-extension` as an unpacked extension.

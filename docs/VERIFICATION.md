@@ -1,10 +1,10 @@
 # Verification record
 
-Release candidate: 0.2.0-beta.2. Recorded 11 October 2026.
+Release candidate: 0.3.0-beta.1. Recorded 11 October 2026.
 
 ## Automated checks
 
-- `npm test`: 31 passed, zero failures.
+- `npm test`: 38 passed, zero failures.
 - `npm audit --omit=dev`: no known advisories at the recorded run. This is a dependency check, not a source audit.
 - `npm run build:demo`: creates the isolated static demonstration.
 - `npm run build:cloud`: bundles the Pages Worker and private application assets.
@@ -36,3 +36,7 @@ The comparison UI was updated to show usernames, creation/deletion dates and exp
 - Public demo reset is intentional; it cannot preserve passwords across reloads.
 
 The release is experimental. Version 1.0 is not claimed.
+
+## Browser login capture
+
+The extension uses a user-click capture and one-use app handoff; the app saves only after confirmation. Automated checks include wrong-tab, frame, origin, token replay and expiry rejection, worker behaviour using mocked Chrome APIs, masked review, duplicate update choice and encrypted revision history. Local browser UI checks use fictional data. Installing the actual extension and checking Chrome/Edge permission prompts is a separate remaining browser validation step; these tests are not marketplace approval or an independent security audit.
